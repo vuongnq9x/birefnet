@@ -86,6 +86,7 @@ def main():
     parser.add_argument("--edge_refine", action="store_true", help="Refine mask edges with simple morphology")
     parser.add_argument("--edge_refine_size", default=3, type=int, help="Kernel size for edge refine (odd int)")
     parser.add_argument("--max_side", default=0, type=int, help="Optional max size for longer image side (keep aspect)")
+    parser.add_argument("--per_image", action="store_true", help="Print per-image summary timing")
     args = parser.parse_args()
 
     config = Config()
@@ -127,7 +128,9 @@ def main():
             new_h = int(orig_size[1] * scale)
             image = image.resize((new_w, new_h), Image.BILINEAR)
 
+        resized_size = image.size
         image, crop_box = pad_to_multiple_of_32(image)
+        infer_size = image.size
 
         transform = transforms.Compose([
             transforms.ToTensor(),
@@ -197,10 +200,20 @@ def main():
             avg_inf_ms = inf_ms / repeat
             fps = 1000.0 / avg_inf_ms if avg_inf_ms > 0 else 0.0
             print(f"[Timing] {os.path.basename(input_path)}")
+            print(f"[Info]   orig {orig_size[0]}x{orig_size[1]} | resized {resized_size[0]}x{resized_size[1]} | infer {infer_size[0]}x{infer_size[1]}")
             print(f"[Timing] preprocess: {pre_ms:.1f} ms")
             print(f"[Timing] inference:  {inf_ms:.1f} ms (avg {avg_inf_ms:.1f} ms, {fps:.2f} FPS)")
             print(f"[Timing] post:       {post_ms:.1f} ms")
             print(f"[Timing] total:      {total_ms:.1f} ms")
+        elif args.per_image:
+            total_ms = (t_post - t0) * 1000
+            inf_ms = (t_inf_end - t_inf_start) * 1000
+            avg_inf_ms = inf_ms / repeat
+            print(
+                f"[Done] {os.path.basename(input_path)} | "
+                f"orig {orig_size[0]}x{orig_size[1]} -> infer {infer_size[0]}x{infer_size[1]} | "
+                f"total {total_ms:.1f} ms | avg inf {avg_inf_ms:.1f} ms"
+            )
 
     if os.path.isdir(args.input):
         input_dir = args.input
