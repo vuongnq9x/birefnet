@@ -20,6 +20,7 @@ core-*-python-*
 .DS_Store
 __MACOSX/
 test/out*
+.idea
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
