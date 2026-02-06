@@ -11,4 +11,6 @@ python remove_bg.py \
   --edge_refine \
   --max_side 1024 \
   --per_image
+python fastapi_app.py --ckpt weights/BiRefNet-general-epoch_244.pth --host 0.0.0.0 --port 8000
+IMG_DIR=/workspace/birefnet/test/in locust -f locustfile.py --headless -u 16 -r 2 -t 1m --host http://localhost:8000
 ```
