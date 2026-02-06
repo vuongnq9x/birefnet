@@ -1,26 +1,37 @@
 import os
 import random
 
-from locust import HttpUser, task, between
+from locust import HttpUser, task, between, StopUser
 
 
 class MaskUser(HttpUser):
     wait_time = between(0, 0)
 
+    def _load_paths(self):
+        img_dir = os.getenv("IMG_DIR", "test/in")
+        if not os.path.isdir(img_dir):
+            print(f"[Locust] IMG_DIR not found: {img_dir}")
+            raise StopUser()
+
+        exts = (".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff")
+        paths = []
+        for name in os.listdir(img_dir):
+            if name.lower().endswith(exts):
+                paths.append(os.path.join(img_dir, name))
+        if not paths:
+            print(f"[Locust] No images found in {img_dir}")
+            raise StopUser()
+        self._paths = paths
+        print(f"[Locust] Loaded {len(paths)} images from {img_dir}")
+
+    def on_start(self):
+        self._load_paths()
+
     @task
     def mask(self):
-        img_dir = os.getenv("IMG_DIR", "test/in")
         paths = getattr(self, "_paths", None)
         if not paths:
-            exts = (".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff")
-            paths = []
-            for name in os.listdir(img_dir):
-                if name.lower().endswith(exts):
-                    paths.append(os.path.join(img_dir, name))
-            if not paths:
-                raise RuntimeError(f"No images found in {img_dir}")
-            self._paths = paths
-
+            self._load_paths()
         path = random.choice(self._paths)
         with open(path, "rb") as f:
             resp = self.client.post(
