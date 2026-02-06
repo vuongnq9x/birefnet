@@ -24,7 +24,7 @@ class MaskUser(HttpUser):
         path = random.choice(self._paths)
         with open(path, "rb") as f:
             self.client.post(
-                "/mask?mask_mode=hard&mask_threshold=0.5",
+                "/mask?mask_rgba=true",
                 files={"file": f},
                 timeout=120,
             )
