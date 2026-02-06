@@ -19,7 +19,8 @@ tmp*
 core-*-python-*
 .DS_Store
 __MACOSX/
-test/out*
+test/out/*
+test/out-masks/*
 .idea
 
 # Byte-compiled / optimized / DLL files
