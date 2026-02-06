@@ -185,6 +185,21 @@ def build_app(ckpt_path, device_override=""):
     return app
 
 
+def create_app():
+    ckpt = os.getenv("BIREfNET_CKPT") or os.getenv("CKPT") or ""
+    if not ckpt:
+        raise RuntimeError("Missing checkpoint. Set BIREfNET_CKPT or CKPT env var.")
+    device = os.getenv("BIREfNET_DEVICE") or ""
+    return build_app(ckpt, device_override=device)
+
+
+# For uvicorn "fastapi_app:app"
+try:
+    app = create_app()
+except Exception:
+    app = None
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Run BiRefNet FastAPI server")
     parser.add_argument("--ckpt", required=True, type=str, help="Path to .pth checkpoint")

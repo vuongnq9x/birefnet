@@ -1,5 +1,6 @@
 ###
 ```
+python -m pip install locust
 pip install -r requirements.txt
 python remove_bg.py \
   --ckpt weights/BiRefNet-general-epoch_244.pth \
