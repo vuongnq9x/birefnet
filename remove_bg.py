@@ -87,6 +87,7 @@ def main():
     parser.add_argument("--edge_refine_size", default=3, type=int, help="Kernel size for edge refine (odd int)")
     parser.add_argument("--max_side", default=0, type=int, help="Optional max size for longer image side (keep aspect)")
     parser.add_argument("--per_image", action="store_true", help="Print per-image summary timing")
+    parser.add_argument("--warmup", default=0, type=int, help="Warmup iterations per image (excluded from timing)")
     args = parser.parse_args()
 
     config = Config()
@@ -153,6 +154,17 @@ def main():
         t_pre = time.perf_counter()
 
         repeat = max(1, args.repeat)
+        warmup = max(0, args.warmup)
+        warmup_ms = 0.0
+        if warmup:
+            sync_device(device)
+            t_warm_start = time.perf_counter()
+            for _ in range(warmup):
+                _ = run_inference(model, tensor, autocast_ctx)
+            sync_device(device)
+            t_warm_end = time.perf_counter()
+            warmup_ms = (t_warm_end - t_warm_start) * 1000
+
         sync_device(device)
         t_inf_start = time.perf_counter()
         pred = None
@@ -209,20 +221,22 @@ def main():
         if args.benchmark:
             pre_ms = (t_pre - t0) * 1000
             inf_ms = (t_inf_end - t_inf_start) * 1000
-            mask_ms = (t_mask_end - t0) * 1000
+            mask_ms = (t_mask_end - t0) * 1000 - warmup_ms
             post_ms = (t_post - t_inf_end) * 1000
-            total_ms = (t_post - t0) * 1000
+            total_ms = (t_post - t0) * 1000 - warmup_ms
             avg_inf_ms = inf_ms / repeat
             fps = 1000.0 / avg_inf_ms if avg_inf_ms > 0 else 0.0
             print(f"[Timing] {os.path.basename(input_path)}")
             print(f"[Info]   orig {orig_size[0]}x{orig_size[1]} | resized {resized_size[0]}x{resized_size[1]} | infer {infer_size[0]}x{infer_size[1]}")
             print(f"[Timing] preprocess: {pre_ms:.1f} ms")
+            if warmup:
+                print(f"[Timing] warmup:    {warmup_ms:.1f} ms (excluded)")
             print(f"[Timing] inference:  {inf_ms:.1f} ms (avg {avg_inf_ms:.1f} ms, {fps:.2f} FPS)")
             print(f"[Timing] read->mask: {mask_ms:.1f} ms")
             print(f"[Timing] post:       {post_ms:.1f} ms")
             print(f"[Timing] total:      {total_ms:.1f} ms")
         elif args.per_image:
-            mask_ms = (t_mask_end - t0) * 1000
+            mask_ms = (t_mask_end - t0) * 1000 - warmup_ms
             inf_ms = (t_inf_end - t_inf_start) * 1000
             avg_inf_ms = inf_ms / repeat
             print(
