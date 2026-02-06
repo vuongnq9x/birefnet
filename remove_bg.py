@@ -187,6 +187,7 @@ def main():
             k = max(3, args.edge_refine_size | 1)
             mask_img = mask_img.filter(ImageFilter.MaxFilter(k)).filter(ImageFilter.MinFilter(k))
             mask_img = mask_img.filter(ImageFilter.MinFilter(k)).filter(ImageFilter.MaxFilter(k))
+        t_mask_end = time.perf_counter()
 
         rgba = Image.open(input_path).convert("RGBA")
         rgba.putalpha(mask_img)
@@ -208,6 +209,7 @@ def main():
         if args.benchmark:
             pre_ms = (t_pre - t0) * 1000
             inf_ms = (t_inf_end - t_inf_start) * 1000
+            mask_ms = (t_mask_end - t0) * 1000
             post_ms = (t_post - t_inf_end) * 1000
             total_ms = (t_post - t0) * 1000
             avg_inf_ms = inf_ms / repeat
@@ -216,16 +218,17 @@ def main():
             print(f"[Info]   orig {orig_size[0]}x{orig_size[1]} | resized {resized_size[0]}x{resized_size[1]} | infer {infer_size[0]}x{infer_size[1]}")
             print(f"[Timing] preprocess: {pre_ms:.1f} ms")
             print(f"[Timing] inference:  {inf_ms:.1f} ms (avg {avg_inf_ms:.1f} ms, {fps:.2f} FPS)")
+            print(f"[Timing] read->mask: {mask_ms:.1f} ms")
             print(f"[Timing] post:       {post_ms:.1f} ms")
             print(f"[Timing] total:      {total_ms:.1f} ms")
         elif args.per_image:
-            total_ms = (t_post - t0) * 1000
+            mask_ms = (t_mask_end - t0) * 1000
             inf_ms = (t_inf_end - t_inf_start) * 1000
             avg_inf_ms = inf_ms / repeat
             print(
                 f"[Done] {os.path.basename(input_path)} | "
                 f"orig {orig_size[0]}x{orig_size[1]} -> infer {infer_size[0]}x{infer_size[1]} | "
-                f"total {total_ms:.1f} ms | avg inf {avg_inf_ms:.1f} ms"
+                f"read->mask {mask_ms:.1f} ms | avg inf {avg_inf_ms:.1f} ms"
             )
 
     if os.path.isdir(args.input):
