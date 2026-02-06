@@ -96,6 +96,7 @@ def build_app(ckpt_path, device_override=""):
         alpha_power: float = Query(1.0, ge=0.1, le=5.0),
         edge_refine: bool = Query(False),
         edge_refine_size: int = Query(3, ge=3),
+        mask_rgba: bool = Query(False),
         timing: bool = Query(False),
     ):
         data = await file.read()
@@ -153,21 +154,32 @@ def build_app(ckpt_path, device_override=""):
             mask_img = mask_img.filter(ImageFilter.MaxFilter(k)).filter(ImageFilter.MinFilter(k))
             mask_img = mask_img.filter(ImageFilter.MinFilter(k)).filter(ImageFilter.MaxFilter(k))
 
+        if mask_rgba:
+            mask_rgba_img = Image.new("RGBA", mask_img.size, (255, 255, 255, 0))
+            mask_rgba_img.putalpha(mask_img)
+            out_img = mask_rgba_img
+        else:
+            out_img = mask_img
+
         buf = BytesIO()
-        mask_img.save(buf, format="PNG")
+        out_img.save(buf, format="PNG")
         buf.seek(0)
         t1 = time.perf_counter()
 
+        elapsed_ms = (t1 - t0) * 1000
         headers = {
             "Content-Disposition": f'attachment; filename="{os.path.splitext(file.filename or "mask")[0]}_mask.png"'
         }
         if timing:
             return JSONResponse({
-                "elapsed_ms": (t1 - t0) * 1000,
+                "elapsed_ms": elapsed_ms,
                 "orig_size": {"w": orig_size[0], "h": orig_size[1]},
                 "device": str(device),
             })
 
+        headers["X-Elapsed-MS"] = f"{elapsed_ms:.3f}"
+        headers["X-Device"] = str(device)
+        headers["X-Orig-Size"] = f"{orig_size[0]}x{orig_size[1]}"
         return StreamingResponse(buf, media_type="image/png", headers=headers)
 
     return app

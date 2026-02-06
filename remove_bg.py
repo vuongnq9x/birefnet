@@ -88,6 +88,7 @@ def main():
     parser.add_argument("--max_side", default=0, type=int, help="Optional max size for longer image side (keep aspect)")
     parser.add_argument("--per_image", action="store_true", help="Print per-image summary timing")
     parser.add_argument("--warmup", default=0, type=int, help="Warmup iterations per image (excluded from timing)")
+    parser.add_argument("--mask_rgba", action="store_true", help="Save mask as RGBA (white foreground, transparent background)")
     args = parser.parse_args()
 
     config = Config()
@@ -215,7 +216,12 @@ def main():
 
         if output_mask_path:
             os.makedirs(os.path.dirname(output_mask_path) or ".", exist_ok=True)
-            mask_img.save(output_mask_path)
+            if args.mask_rgba:
+                mask_rgba = Image.new("RGBA", mask_img.size, (255, 255, 255, 0))
+                mask_rgba.putalpha(mask_img)
+                mask_rgba.save(output_mask_path)
+            else:
+                mask_img.save(output_mask_path)
         t_post = time.perf_counter()
 
         if args.benchmark:
