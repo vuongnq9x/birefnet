@@ -19,6 +19,7 @@ tmp*
 core-*-python-*
 .DS_Store
 __MACOSX/
+test/out*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
