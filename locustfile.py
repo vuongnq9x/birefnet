@@ -38,12 +38,14 @@ class MaskUser(HttpUser):
             self._load_paths()
         path = random.choice(self._paths)
         with open(path, "rb") as f:
-            resp = self.client.post(
+            with self.client.post(
                 "/mask?mask_rgba=true",
                 files={"file": f},
                 timeout=120,
                 catch_response=True,
                 name="/mask",
-            )
-            if resp.status_code != 200:
-                resp.failure(f"{resp.status_code}: {resp.text[:200]}")
+            ) as resp:
+                if resp.status_code != 200:
+                    resp.failure(f"{resp.status_code}: {resp.text[:200]}")
+                else:
+                    resp.success()
