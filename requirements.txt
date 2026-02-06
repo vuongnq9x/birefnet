@@ -1,3 +1,4 @@
+pillow
 torch>=2.5.0
 torchvision
 numpy<2
@@ -14,3 +15,6 @@ tabulate
 
 huggingface-hub>0.25
 accelerate
+fastapi
+uvicorn
+python-multipart
