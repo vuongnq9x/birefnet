@@ -8,5 +8,6 @@ python remove_bg.py \
   --output_mask test/out-masks \
   --alpha_power 1.4 \
   --edge_refine \
-  --max_side 1024
+  --max_side 1024 \
+  --per_image
 ```

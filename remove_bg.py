@@ -100,6 +100,19 @@ def main():
         else:
             device = "cpu"
 
+    device_str = str(device)
+    if "cuda" in device_str and torch.cuda.is_available():
+        try:
+            idx = int(device_str.split(":")[1]) if ":" in device_str else 0
+        except ValueError:
+            idx = 0
+        gpu_name = torch.cuda.get_device_name(idx)
+        print(f"[Info] Device: CUDA ({gpu_name})")
+    elif device_str == "mps":
+        print("[Info] Device: MPS (Apple)")
+    else:
+        print("[Info] Device: CPU")
+
     if config.precisionHigh:
         torch.set_float32_matmul_precision("high")
 
