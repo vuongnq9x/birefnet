@@ -1,7 +1,11 @@
 import os
 import random
 
-from locust import HttpUser, task, between, StopUser
+from locust import HttpUser, task, between
+try:
+    from locust.exception import StopUser
+except Exception:  # fallback for older locust
+    StopUser = Exception
 
 
 class MaskUser(HttpUser):
